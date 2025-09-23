@@ -1,0 +1,7 @@
+aiogram==3.10.0
+aiohttp==3.10.3
+ib-insync==0.9.86
+python-dotenv==1.0.1
+pytz==2024.1
+yfinance==0.2.40
+
