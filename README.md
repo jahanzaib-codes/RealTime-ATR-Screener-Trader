@@ -121,7 +121,7 @@ Once running, the bot sends a start-up message to your Telegram chat. Use the re
   - `opslog_YYYY-MM-DD.json`
 - Rotating logs in `logs/` for app and errors
 
-### Troubleshootings
+### Troubleshooting
 - **Polygon WebSocket disconnects**:
   - The screener auto-reconnects with backoff. Ensure `POLYGON_API_KEY` is valid and network is stable.
   - Check auth/status lines in `logs/app.log`. On failures you’ll see entries like `[WS STATUS] {"status":"error", ...}` and `WS closed ... code=...`.
