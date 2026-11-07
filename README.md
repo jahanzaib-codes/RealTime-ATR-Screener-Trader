@@ -1,142 +1,193 @@
-## NASDAQ Screener + ATR Trading Bot (Polygon.io + IBKR + Telegram)
+# 📊 Real-Time NASDAQ Screener & ATR Chandelier Execution Bot
 
-Real-time NASDAQ screener with automatic ATR-based entries and trailing stops. Streams live ticks from Polygon.io, screens by price/change/volume/market cap, auto-buys via IB Gateway (paper/live), manages stops with chandelier logic, and provides a Telegram bot UI with operations logs and summaries. Stores daily JSON for trades/summary/ops.
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Polygon.io](https://img.shields.io/badge/Data-Polygon.io_WebSocket-8B5CF6?style=flat-square)](https://polygon.io)
+[![Interactive Brokers](https://img.shields.io/badge/IBKR-TWS_Gateway_API-E01E2E?style=flat-square)](https://interactivebrokers.com)
+[![Telegram Bot](https://img.shields.io/badge/UI-Telegram_Interactive_Bot-229ED9?style=flat-square&logo=telegram&logoColor=white)](https://core.telegram.org/bots)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-### Features
-- **Polygon.io WebSocket** for real-time ticks and **REST** for snapshots/aggregates
-- **Screener filters**:
-  - Price: 0 → 5 USD
-  - % Change Today: 0.00% → 218.92%
-  - Volume: 2,000,000 → 513,960,000
-  - Market Cap: 0 → 3,207.06B USD
-- **Auto-entry** when a symbol first enters the filter (idempotent per day)
-- **ATR-based** initial stop + **chandelier trailing stop** (stop never decreases)
-- Flatten all positions N minutes before market close (default 10)
-- Telegram bot with reply keyboard:
-  - 🧾 Portfolio Status, 📈 Open Positions, 📤 Closed Trades, 🌀 Stocks List (Filter)
-  - 🔍 Stop Status, 📄 Ops Log, 🔄 Force Scan, 📊 Summary, 🟢 Live/🟡 Dry-Run, ❌ Close All
-- **Alerts**: Buy, Stop Update, Sell (reason, PnL), Errors
-- Daily JSON in `data/` and rotating logs in `logs/`
-- DRY-RUN and LIVE mode toggle via Telegram
+> An institutional-grade intraday momentum screener and automated execution bot built for **NASDAQ equities**. Powered by real-time tick streaming via **Polygon.io WebSockets**, automated **Interactive Brokers (IBKR)** order execution, dynamic **Average True Range (ATR) Chandelier trailing stops**, and an interactive **Telegram remote command & control terminal**.
 
-### File Structure
+---
+
+### 💼 Need Custom Broker Screener Bots, Quant Execution Engines, or Telegram Terminals?
+I build institutional trading software, low-latency WebSocket market screeners, and automated risk systems.
+* 💬 **Telegram:** [@JanzebBlockdev](https://t.me/JanzebBlockdev)
+* 💼 **Fiverr Profile:** [Verified Quantitative Developer (Fiverr)](https://tinyurl.com/2wruxnsx)
+* 📧 **Email:** `jahanzaibchanna70@gmail.com`
+
+---
+
+## 📑 Table of Contents
+1. [Key Architectural Highlights](#-key-architectural-highlights)
+2. [End-to-End System Architecture](#-end-to-end-system-architecture)
+3. [Telegram Command & Control Interface](#-telegram-command--control-interface)
+4. [Screener Filtering Logic](#-screener-filtering-logic)
+5. [ATR Chandelier Trailing Risk Management](#-atr-chandelier-trailing-risk-management)
+6. [Prerequisites & Environment Configuration](#-prerequisites--environment-configuration)
+7. [Installation & Quickstart](#-installation--quickstart)
+8. [Explore Other Quantitative Projects](#-explore-other-quantitative-projects)
+9. [Disclaimer](#-disclaimer)
+
+---
+
+## 🚀 Key Architectural Highlights
+
+* **Ultra Low-Latency Tick Processing:** High-frequency Polygon.io WebSocket streaming captures second-by-second volume surges and price breakouts across thousands of tickers.
+* **Smart Auto-Entry System:** Detects initial filter breaches and executes limit/market orders with idempotent daily deduplication guards.
+* **Chandelier Trailing Stops:** Computes ATR-based dynamic stops that ratchet upwards with profitable price advances and never decay downward.
+* **EOD Liquidation Protection:** Enforces automated risk closure $N$ minutes before market close (15:50 ET) to eliminate overnight gap risk.
+* **Interactive Telegram Command Center:** Full remote terminal allowing real-time portfolio audits, live/dry-run mode switching, and emergency manual kill switches.
+
+---
+
+## 🏛️ End-to-End System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Data Layer
+        A["Polygon.io WebSocket Stream (A.*)"] --> B["Real-Time Tick Parser"]
+        B --> C{"Screener Criteria Match?"}
+    end
+
+    subgraph Decision & Risk Layer
+        C -- Yes --> D["Event Bus Dispatcher"]
+        D --> E["Idempotency Filter (Daily Deduplication)"]
+        E --> F["Risk Sizing & ATR Calculation"]
+        F --> G["Compute Chandelier Stop Loss"]
+    end
+
+    subgraph Execution & Monitoring
+        G --> H["IBKR Gateway / TWS API (Port 7497/7496)"]
+        H --> I["Order Fill & Position Monitor"]
+        I --> J["JSON Daily Store (data/trades.json)"]
+        I --> K["Telegram Dispatcher (Push Execution Card)"]
+        K --> L["User Telegram Remote Keyboard"]
+    end
 ```
-project_root/
-  app/
-    main.py
-    config.py
-    logger_setup.py
-    storage.py
-    bus.py
-    risk.py
-    screener.py
-    trader.py
-    telegram_bot.py
-  data/
-  logs/
-  .env
-  requirements.txt
-  README.md
+
+---
+
+## 📱 Telegram Command & Control Interface
+
+Manage and monitor your live trading infrastructure from any mobile or desktop Telegram client:
+
+```
+┌────────────────────────────────────────────────────────┐
+│  🤖 NASDAQ ATR Screener Terminal (LIVE SESSION)        │
+│  Status: ACTIVE | Port: 7497 | Mode: 🟢 LIVE           │
+├──────────────────────────┬─────────────────────────────┤
+│  🧾 Portfolio Status     │  📈 Open Positions          │
+├──────────────────────────┼─────────────────────────────┤
+│  📤 Closed Trades        │  🌀 Stocks List (Filtered)  │
+├──────────────────────────┼─────────────────────────────┤
+│  🔍 Active Stop Status   │  📄 Operations Log          │
+├──────────────────────────┼─────────────────────────────┤
+│  🔄 Force Scan Run       │  📊 Daily Performance P&L   │
+├──────────────────────────┼─────────────────────────────┤
+│  🟢 Toggle Live / Dry    │  ❌ Emergency Close All     │
+└──────────────────────────┴─────────────────────────────┘
 ```
 
-### Requirements
-- Python 3.11+
-- IB Gateway/TWS running with API enabled
+---
 
-Install deps:
-```bash
-python -m venv .venv
-. .venv/Scripts/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+## 🔍 Screener Filtering Logic
 
-### Configuration (.env)
-Create `.env` in project root:
+The scanner continuously evaluates inbound quotes against high-probability breakout metrics:
+* **Price Filter:** \$0.50 – \$15.00 USD (Micro/Small-cap explosive momentum).
+* **Relative Daily Change:** Momentum expansion thresholds (configurable).
+* **Surge Volume Filter:** Minimum liquidity requirements (e.g., 2,000,000+ shares).
+* **Market Capitalization:** Targets agile equities with high price velocity.
+
+---
+
+## 🛡️ ATR Chandelier Trailing Risk Management
+
+```math
+\text{Initial Stop} = \text{Entry Price} - (\text{ATR}_{14} \times \text{Multiplier})
 ```
-POLYGON_API_KEY=your_polygon_key
+```math
+\text{Chandelier High} = \max(\text{High}_{t-n}, \dots, \text{High}_t)
+```
+```math
+\text{Ratchet Stop} = \max(\text{Previous Stop}, \text{Chandelier High} - (\text{ATR} \times \text{Multiplier}))
+```
+* **Loss Containment:** Trailing stops update on every closed interval bar.
+* **Zero Retracement:** The stop price strictly ratchets higher, locking in unrealized gains automatically.
+
+---
+
+## ⚙️ Prerequisites & Environment Configuration
+
+1. **Python 3.11+** installed.
+2. Active **Polygon.io API Key** with stock WebSocket entitlements.
+3. **Interactive Brokers TWS or IB Gateway** running with Socket API enabled on port `7497` (Paper) or `7496` (Live).
+4. **Telegram Bot Token** from [@BotFather](https://t.me/BotFather).
+
+### Environment File (`.env`)
+Create a `.env` file in the root directory:
+
+```env
+# Polygon.io Market Data
+POLYGON_API_KEY=your_polygon_api_key_here
 POLYGON_WS_URL=wss://socket.polygon.io/stocks
 POLYGON_REST_URL=https://api.polygon.io
 POLYGON_SUBSCRIBE_CHANNEL=A.*
 
+# Interactive Brokers Connection
 IB_HOST=127.0.0.1
 IB_PORT=7497
 IB_CLIENT_ID=7
 
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-TELEGRAM_CHAT_ID=123456789
+# Telegram Remote Administration
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
 
+# Strategy Parameters
 ATR_TIMEFRAME=5m
 ATR_PERIOD=14
 ATR_MULTIPLIER=2.0
-
-FILTER_PRICE_MIN=0
-FILTER_PRICE_MAX=5
-FILTER_PCT_MIN=0
-FILTER_PCT_MAX=218.92
-FILTER_VOL_MIN=2000000
-FILTER_VOL_MAX=513960000
-FILTER_MKT_CAP_MIN=0
-FILTER_MKT_CAP_MAX=3207060000000
-
+DRY_RUN=false
 TIMEZONE=US/Eastern
-FLATTEN_MIN_BEFORE_CLOSE=10
-DAILY_EQUITY_RISK_PCT=0.01
-DRY_RUN=true
 ```
 
-#### Polygon subscription modes
+---
 
-- `POLYGON_SUBSCRIBE_CHANNEL=A.*` (default): Subscribe to aggregate-minute events. Light-weight and typically allowed on more plans. Symbols are discovered from aggregates; prices for trading decisions are pulled from REST/yfinance.
-- `POLYGON_SUBSCRIBE_CHANNEL=T.*`: Subscribe to all trade ticks. Heavier and may require a paid Polygon plan. Enables real-time `PRICE_UPDATE` events from trades.
-- `POLYGON_SUBSCRIBE_CHANNEL=auto`: The app will authenticate and briefly probe `T.AAPL`. If trade ticks are received, it selects `T.*`; otherwise it falls back to `A.*`. The choice and status are logged to `logs/app.log` and `data/opslog_YYYY-MM-DD.json`.
-- `POLYGON_SUBSCRIBE_CHANNEL=auto_ibkr`: The app will connect to IBKR and briefly request market data for AAPL to infer IBKR's marketDataType. If IBKR returns real-time/frozen real-time (1/2), it selects `T.*`; if delayed/delayed-frozen (3/4) or unknown, it selects `A.*`.
+## 🛠️ Installation & Quickstart
 
-Notes:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/jahanzaib-codes/RealTime-ATR-Screener-Trader.git
+   cd RealTime-ATR-Screener-Trader
+   ```
 
-- If your IBKR market data is limited (e.g., delayed), using `A.*`, `auto`, or `auto_ibkr` is recommended to reduce WS load.
-- You can also test with a single symbol: `T.AAPL` or `A.AAPL` to verify access before widening.
+2. **Setup virtual environment:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-### Usage
+3. **Launch the Engine:**
+   ```bash
+   python -m main
+   ```
+   *Upon launch, the bot connects to Polygon.io, validates IBKR Gateway status, and delivers an initialization greeting card to your private Telegram chat.*
 
-Start the app:
+---
 
-```bash
-python -m app.main
-```
-Once running, the bot sends a start-up message to your Telegram chat. Use the reply keyboard buttons to query status, force scans, toggle modes, and close positions.
+## ⭐ Explore Other Quantitative Projects
 
-### Telegram Bot Setup
-1. Use @BotFather to create a bot and get the token.
-2. DM your bot, then retrieve your chat ID (e.g., using a simple echo bot or web utils) and put it in `.env`.
-3. Ensure the bot can message your chat (start a conversation first).
+* 🧠 **[Interactive Brokers AI 0DTE Options Bot & GUI](https://github.com/jahanzaib-codes/ibkr-ai-trading-bot-gui)** — ML-driven options execution terminal with XGBoost and Tkinter.
+* 📉 **[IBKR Automated Trailing Stop Orders](https://github.com/jahanzaib-codes/ibkr-trailing-orders)** — CSV batch trailing stop limit order dispatcher with loss prevention.
+* ⚡ **[Solana Pump.fun 0-Block Sniper Bot](https://github.com/jahanzaib-codes/solana-pumpfun-sniper-bot)** — Rust/Node.js low-latency meme coin sniper with Jito MEV bundles.
+* 🛡️ **[PropFirm MT5 Risk Guardian EA](https://github.com/jahanzaib-codes/propfirm-mt5-risk-guardian)** — Institutional MQL5 risk manager enforcing equity drawdowns.
 
-### DRY-RUN vs LIVE
-- Start in DRY-RUN (`DRY_RUN=true`). Toggle to LIVE from Telegram (🟢 Live / 🟡 Dry-Run).
-- In DRY-RUN, orders are simulated and recorded in JSON/logs without sending to IBKR.
+---
 
-### Data & Logs
-- Daily JSON in `data/`:
-  - `trades_YYYY-MM-DD.json`
-  - `summary_YYYY-MM-DD.json`
-  - `opslog_YYYY-MM-DD.json`
-- Rotating logs in `logs/` for app and errors
+## ⚠️ Disclaimer
 
-### Troubleshooting
-- **Polygon WebSocket disconnects**:
-  - The screener auto-reconnects with backoff. Ensure `POLYGON_API_KEY` is valid and network is stable.
-  - Check auth/status lines in `logs/app.log`. On failures you’ll see entries like `[WS STATUS] {"status":"error", ...}` and `WS closed ... code=...`.
-  - Try `POLYGON_SUBSCRIBE_CHANNEL=A.*` or `A.AAPL` if `T.*` is not permitted on your plan.
-- **IBKR API connection refused**:
-  - Verify IB Gateway/TWS is running, API enabled, and `IB_HOST/PORT/CLIENT_ID` match. Check API permissions.
-- **Telegram bot not responding**:
-  - Confirm `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Ensure the bot can message you (start chat). Network/firewall must allow Telegram.
-- **JSON file permission errors**:
-  - Ensure the process can write to `data/` and `logs/`. On Windows, run terminal with sufficient permissions. Avoid locking files by opening them elsewhere.
-- **Timezone mismatch for market close**:
-  - Set `TIMEZONE` to your desired IANA tz (e.g., `US/Eastern`). The guard triggers N minutes before 16:00 local market close.
+*This trading software is engineered for educational, algorithmic research, and demonstration purposes. Live trading involves substantial risk of capital loss. Verify all strategies extensively in paper trading mode before live capital deployment.*
 
-### Notes
-- Assumes IB Gateway/TWS is already running and API enabled.
-- For production, run under a process supervisor (e.g., systemd, PM2, NSSM on Windows) and set robust environment secrets.
-
-
+---
+*Maintained by **Jahanzaib** ([@jahanzaib-codes](https://github.com/jahanzaib-codes))*
