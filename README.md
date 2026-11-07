@@ -124,6 +124,10 @@ The scanner continuously evaluates inbound quotes against high-probability break
 3. **Interactive Brokers TWS or IB Gateway** running with Socket API enabled on port `7497` (Paper) or `7496` (Live).
 4. **Telegram Bot Token** from [@BotFather](https://t.me/BotFather).
 
+<p align="center">
+  <img src="tws_api_settings.jpg" width="700" alt="Interactive Brokers TWS API Settings Configuration" style="border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);"/>
+</p>
+
 ### Environment File (`.env`)
 Create a `.env` file in the root directory:
 
