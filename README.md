@@ -13,7 +13,7 @@
 ### 💼 Need Custom Broker Screener Bots, Quant Execution Engines, or Telegram Terminals?
 I build institutional trading software, low-latency WebSocket market screeners, and automated risk systems.
 * 💬 **Telegram:** [@JanzebBlockdev](https://t.me/JanzebBlockdev)
-* 💼 **Fiverr Profile:** [Verified Quantitative Developer (Fiverr)](https://tinyurl.com/2wruxnsx)
+* 💼 **Fiverr Profile:** [Verified Quantitative Developer (Fiverr)](https://www.fiverr.com/jahanzaib313110)
 * 📧 **Email:** `jahanzaibchanna70@gmail.com`
 
 ---
